@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+target/
+**/target/
+dist/
+app/dist/
+src-tauri/target/
+crates/*/target/
+
+# Local tool state
+.agents/
+.codex/
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+
+# Environment and editor state
+.env
+.env.*
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,21 @@
+{
+  "name": "alert-timer",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.26.0",
+  "scripts": {
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "test": "pnpm test:assets && pnpm test:branding && pnpm test:core && pnpm test:tauri",
+    "test:assets": "node scripts/asset-policy.test.mjs",
+    "test:branding": "node scripts/branding.test.mjs",
+    "test:core": "cargo test --manifest-path crates/alert-timer-core/Cargo.toml",
+    "test:tauri": "cargo test --manifest-path src-tauri/Cargo.toml --lib",
+    "coverage:core": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/coverage-core.ps1",
+    "tauri": "tauri"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.11.3"
+  }
+}

@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AlertTimer</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <script src="./app.js" defer></script>
+  </head>
+  <body>
+    <main class="shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">AT</div>
+          <div>
+            <h1>AlertTimer</h1>
+            <p class="brand-subtitle">Tray Overlay</p>
+            <p class="brand-credit">by 엘리시움 사과팬케이크</p>
+          </div>
+        </div>
+
+        <div class="sidebar-actions">
+          <button class="primary" id="add-profile" type="button">+ 프로필</button>
+          <button class="ghost" id="save-settings" type="button">저장</button>
+        </div>
+
+        <section class="profile-list" id="profile-list" aria-label="타이머 프로필"></section>
+      </aside>
+
+      <section class="workspace">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Settings</p>
+            <h2 id="editor-title">프로필</h2>
+          </div>
+          <div class="status-strip">
+            <span class="status-pill" id="profile-count">0 profiles</span>
+            <span class="status-pill" id="save-state">대기</span>
+          </div>
+        </header>
+
+        <div class="content-grid">
+          <section class="editor-panel" id="editor-panel"></section>
+          <section class="monitor-panel">
+            <div class="panel-header">
+              <p class="eyebrow">Live</p>
+              <h3>타이머 상태</h3>
+            </div>
+            <div class="timer-stack" id="timer-stack"></div>
+            <div class="overlay-settings" id="overlay-settings"></div>
+          </section>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
