@@ -24,6 +24,10 @@ const keyListenerRs = await readFile(
   "utf8",
 );
 const trayRs = await readFile(new URL("../src-tauri/src/tray.rs", import.meta.url), "utf8");
+const nsisRepackScript = await readFile(
+  new URL("../scripts/repack-nsis-current-user-highest.mjs", import.meta.url),
+  "utf8",
+);
 const tauriConfig = JSON.parse(
   await readFile(new URL("../src-tauri/tauri.conf.json", import.meta.url), "utf8"),
 );
@@ -117,6 +121,13 @@ assert(
     readme.includes("관리자 권한") &&
     readme.includes("MapleStory"),
   "The app should offer a user-triggered administrator restart and document why MapleStory key capture may need it",
+);
+
+assert(
+  tauriConfig.bundle.windows.nsis.installMode === "currentUser" &&
+    packageJson.scripts.build.includes("repack-nsis-current-user-highest.mjs") &&
+    nsisRepackScript.includes("RequestExecutionLevel highest"),
+  "The NSIS installer should keep the current-user install path while requesting the highest available privilege for elevated updates",
 );
 
 assert(

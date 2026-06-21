@@ -6,7 +6,7 @@
   "packageManager": "pnpm@10.26.0",
   "scripts": {
     "dev": "tauri dev",
-    "build": "tauri build",
+    "build": "tauri build && node scripts/repack-nsis-current-user-highest.mjs",
     "test": "pnpm test:assets && pnpm test:branding && pnpm test:core && pnpm test:tauri",
     "test:assets": "node scripts/asset-policy.test.mjs",
     "test:branding": "node scripts/branding.test.mjs",

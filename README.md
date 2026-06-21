@@ -69,6 +69,8 @@ AlertTimer는 메이플스토리처럼 화면 집중도가 높은 게임을 할 
 .\installer.exe
 ```
 
+업데이트 설치 중 기존 AlertTimer가 실행 중이면 설치 프로그램이 종료 확인을 요청합니다. 설치 위치는 사용자 폴더(`%LOCALAPPDATA%\AlertTimer`)를 유지하지만, MapleStory 입력 감지를 위해 AlertTimer를 관리자 권한으로 실행한 상태에서도 업데이트할 수 있도록 설치 프로그램은 Windows UAC 승인을 요청할 수 있습니다.
+
 또는 Tauri가 생성한 원본 설치 파일을 실행해도 됩니다.
 
 ```powershell
@@ -259,6 +261,8 @@ The easiest installer is available at the project root:
 ```powershell
 .\installer.exe
 ```
+
+If AlertTimer is already running during an update, the installer asks to close it before copying files. The install location stays in the current-user folder (`%LOCALAPPDATA%\AlertTimer`), but the installer may request Windows UAC approval so it can update AlertTimer even when the existing app is running with administrator privileges for MapleStory input detection.
 
 You can also run the original NSIS setup file:
 
