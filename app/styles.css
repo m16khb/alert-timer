@@ -302,7 +302,8 @@ h1 {
   gap: 8px;
 }
 
-.status-pill {
+.status-pill,
+.admin-pill {
   min-width: 86px;
   padding: 8px 10px;
   border: 1px solid var(--line);
@@ -311,6 +312,23 @@ h1 {
   color: var(--soft);
   font-size: 12px;
   text-align: center;
+}
+
+.admin-pill {
+  border-color: rgba(244, 183, 64, 0.55);
+  background: rgba(244, 183, 64, 0.12);
+  color: #ffe3a4;
+  font-weight: 800;
+}
+
+.status-pill.elevated {
+  border-color: rgba(32, 199, 167, 0.55);
+  color: #9ff4e3;
+}
+
+.status-pill.not-elevated {
+  border-color: rgba(244, 183, 64, 0.45);
+  color: #ffe3a4;
 }
 
 .content-grid {

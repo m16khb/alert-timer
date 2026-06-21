@@ -1,6 +1,7 @@
 mod key_listener;
 mod models;
 mod overlay;
+mod privilege;
 mod settings_store;
 mod tray;
 
@@ -78,6 +79,16 @@ fn get_timer_snapshots(state: State<'_, Arc<AppState>>) -> Vec<TimerSnapshot> {
     state.snapshots(state.now_ms())
 }
 
+#[tauri::command]
+fn get_privilege_status() -> privilege::PrivilegeStatus {
+    privilege::status()
+}
+
+#[tauri::command]
+fn relaunch_as_admin() -> Result<(), String> {
+    privilege::relaunch_as_admin()
+}
+
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
@@ -109,7 +120,9 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             get_settings,
             save_settings,
-            get_timer_snapshots
+            get_timer_snapshots,
+            get_privilege_status,
+            relaunch_as_admin
         ])
         .run(tauri::generate_context!())
         .expect("failed to run AlertTimer");

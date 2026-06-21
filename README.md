@@ -89,15 +89,20 @@ MSI가 필요한 환경에서는 아래 파일을 사용할 수 있습니다.
 
 Windows SmartScreen이 표시되면 `추가 정보`를 누른 뒤 `실행`을 선택하면 됩니다.
 
+### MapleStory 키 입력이 감지되지 않을 때
+
+MapleStory가 관리자 권한 또는 보호된 프로세스로 실행되면 일반 권한 AlertTimer가 전역 키 입력을 받지 못할 수 있습니다. 이 경우 앱 상단의 `관리자 권한 재시작` 버튼을 눌러 AlertTimer만 관리자 권한으로 다시 실행하세요. Windows UAC 창은 사용자가 직접 승인해야 합니다.
+
 ### 사용 방법
 
 1. `installer.exe`로 설치하거나 `AlertTimer.exe`를 실행합니다.
 2. 앱에서 야누스 프로필을 확인합니다.
-3. 필요하면 키, 타이머 시간, 점멸 시작 시간, 색상, 테두리 두께를 조정합니다.
-4. `저장`을 누릅니다.
-5. 게임 중 설정한 키를 누르면 타이머가 갱신됩니다.
-6. 시간이 가까워지면 오버레이 테두리가 점멸합니다.
-7. 트레이 메뉴의 `미니 타이머 열기`로 다음 알림까지 남은 시간을 확인할 수 있습니다.
+3. 상단 상태가 `일반 권한`이고 MapleStory 키 입력이 감지되지 않으면 `관리자 권한 재시작`을 누릅니다.
+4. 필요하면 키, 타이머 시간, 점멸 시작 시간, 색상, 테두리 두께를 조정합니다.
+5. `저장`을 누릅니다.
+6. 게임 중 설정한 키를 누르면 타이머가 갱신됩니다.
+7. 시간이 가까워지면 오버레이 테두리가 점멸합니다.
+8. 트레이 메뉴의 `미니 타이머 열기`로 다음 알림까지 남은 시간을 확인할 수 있습니다.
 
 ### 설정 설명
 
@@ -275,15 +280,20 @@ To run without installing:
 
 If Windows SmartScreen appears, choose `More info`, then `Run anyway`.
 
+### When MapleStory Key Input Is Not Detected
+
+If MapleStory runs as administrator or as a protected process, a normal AlertTimer process may not receive global key input. In that case, click `관리자 권한 재시작` in the app top bar to restart only AlertTimer with administrator privileges. The Windows UAC prompt must be approved by the user.
+
 ### Usage
 
 1. Install with `installer.exe` or run `AlertTimer.exe`.
 2. Open the app and check the Janus profile.
-3. Adjust key, timer duration, warning start, color, and border thickness if needed.
-4. Click `저장` to save.
-5. While playing, press the configured key to reset the timer.
-6. When the timer approaches expiration, the overlay border flashes.
-7. Use `미니 타이머 열기` from the tray menu to check the next alert countdown.
+3. If the top bar shows `일반 권한` and MapleStory key input is not detected, click `관리자 권한 재시작`.
+4. Adjust key, timer duration, warning start, color, and border thickness if needed.
+5. Click `저장` to save.
+6. While playing, press the configured key to reset the timer.
+7. When the timer approaches expiration, the overlay border flashes.
+8. Use `미니 타이머 열기` from the tray menu to check the next alert countdown.
 
 ### Settings
 

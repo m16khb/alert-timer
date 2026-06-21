@@ -16,6 +16,7 @@ const overlayCss = await readFile(new URL("../app/overlay.css", import.meta.url)
 const packageJson = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
 const readme = await readFile(new URL("../README.md", import.meta.url), "utf8");
 const cargoToml = await readFile(new URL("../src-tauri/Cargo.toml", import.meta.url), "utf8");
+const buildRs = await readFile(new URL("../src-tauri/build.rs", import.meta.url), "utf8");
 const mainRs = await readFile(new URL("../src-tauri/src/main.rs", import.meta.url), "utf8");
 const libRs = await readFile(new URL("../src-tauri/src/lib.rs", import.meta.url), "utf8");
 const keyListenerRs = await readFile(
@@ -108,6 +109,14 @@ assert(
   keyListenerRs.includes("windows_impl::event_loop(ready_sender)") &&
     !keyListenerRs.includes("windows_impl::poll_loop(ready_sender);"),
   "Global key input should start with the low-level keyboard hook, not polling, so game foreground input is captured reliably",
+);
+
+assert(
+  appJs.includes("restart-admin") &&
+    libRs.includes("relaunch_as_admin") &&
+    readme.includes("관리자 권한") &&
+    readme.includes("MapleStory"),
+  "The app should offer a user-triggered administrator restart and document why MapleStory key capture may need it",
 );
 
 assert(

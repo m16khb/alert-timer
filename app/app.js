@@ -28,14 +28,21 @@ const overlaySettings = document.querySelector("#overlay-settings");
 const editorTitle = document.querySelector("#editor-title");
 const profileCount = document.querySelector("#profile-count");
 const saveState = document.querySelector("#save-state");
+const privilegeState = document.querySelector("#privilege-state");
+const restartAdmin = document.querySelector("#restart-admin");
 
 let settings = structuredClone(fallbackSettings);
 let snapshots = [];
 let selectedId = "janus";
 let dirty = false;
+let privilegeStatus = {
+  is_elevated: false,
+  can_relaunch_as_admin: false,
+};
 
 document.querySelector("#add-profile").addEventListener("click", addProfile);
 document.querySelector("#save-settings").addEventListener("click", saveSettings);
+restartAdmin.addEventListener("click", relaunchAsAdmin);
 
 bootstrap();
 
@@ -43,6 +50,7 @@ async function bootstrap() {
   settings = normalizeSettings(await invoke("get_settings"));
   selectedId = settings.profiles[0]?.id ?? null;
   snapshots = await invoke("get_timer_snapshots");
+  privilegeStatus = await invoke("get_privilege_status");
   render();
   await listen("timer://snapshot", (event) => {
     snapshots = event.payload;
@@ -55,6 +63,7 @@ function render() {
   renderEditor();
   renderStatusOnly();
   renderOverlaySettings();
+  renderPrivilegeStatus();
   profileCount.textContent = `${settings.profiles.length} profiles`;
   saveState.textContent = dirty ? "수정됨" : "저장됨";
 }
@@ -173,6 +182,22 @@ function renderOverlaySettings() {
     settings.overlay.border_thickness_px = numberValue(event.currentTarget, 8);
     markDirty();
   });
+}
+
+function renderPrivilegeStatus() {
+  privilegeState.classList.toggle("elevated", Boolean(privilegeStatus.is_elevated));
+  privilegeState.classList.toggle("not-elevated", !privilegeStatus.is_elevated);
+  privilegeState.textContent = privilegeStatus.is_elevated ? "관리자 권한" : "일반 권한";
+  restartAdmin.hidden = !privilegeStatus.can_relaunch_as_admin;
+}
+
+async function relaunchAsAdmin() {
+  saveState.textContent = "재시작 요청";
+  try {
+    await invoke("relaunch_as_admin");
+  } catch (error) {
+    saveState.textContent = String(error);
+  }
 }
 
 function addProfile() {
@@ -355,6 +380,13 @@ async function mockInvoke(command, payload) {
       overdue_ms: null,
     }));
   }
+  if (command === "get_privilege_status") {
+    return {
+      is_elevated: false,
+      can_relaunch_as_admin: true,
+    };
+  }
+  if (command === "relaunch_as_admin") return null;
   return null;
 }
 
