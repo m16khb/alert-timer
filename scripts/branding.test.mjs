@@ -114,6 +114,6 @@ assert(
 );
 
 assert(
-  tauriConfig.version !== "0.1.0",
-  "App version should be bumped after the icon refresh so Windows treats installer.exe as an update",
+  tauriConfig.version === "0.1.0",
+  "App version should stay at 0.1.0 until the timer flow is fully verified",
 );

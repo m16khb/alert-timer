@@ -1,6 +1,6 @@
 [package]
 name = "alert-timer"
-version = "0.1.6"
+version = "0.1.0"
 description = "A low-resource Tauri timer overlay for skill recast reminders."
 authors = ["AlertTimer"]
 edition = "2024"
