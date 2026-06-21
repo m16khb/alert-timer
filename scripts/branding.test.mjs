@@ -11,6 +11,7 @@ const miniHtml = await readFile(new URL("../app/mini.html", import.meta.url), "u
 const appJs = await readFile(new URL("../app/app.js", import.meta.url), "utf8");
 const miniJs = await readFile(new URL("../app/mini.js", import.meta.url), "utf8");
 const stylesCss = await readFile(new URL("../app/styles.css", import.meta.url), "utf8");
+const miniCss = await readFile(new URL("../app/mini.css", import.meta.url), "utf8");
 const overlayCss = await readFile(new URL("../app/overlay.css", import.meta.url), "utf8");
 const packageJson = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
 const readme = await readFile(new URL("../README.md", import.meta.url), "utf8");
@@ -51,6 +52,20 @@ assert(
 assert(
   miniJs.includes("timer://snapshot") && miniJs.includes("next-alert"),
   "Mini timer window should subscribe to timer snapshots and render the next alert",
+);
+
+assert(
+  appJs.includes("progressPercent") &&
+    appJs.includes("timer-progress") &&
+    stylesCss.includes(".timer-progress-fill"),
+  "Main timer status should render clear running-state progress bars",
+);
+
+assert(
+  miniJs.includes("progressPercent") &&
+    miniJs.includes("mini-progress") &&
+    miniCss.includes(".mini-progress-fill"),
+  "Mini timer window should render compact timer progress bars",
 );
 
 assert(

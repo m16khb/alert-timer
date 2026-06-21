@@ -50,7 +50,9 @@ function alertMs(snapshot) {
 function renderNext(next) {
   if (!next) {
     phaseEl.textContent = "대기";
+    nextAlertEl.className = "next-alert waiting";
     nextAlertEl.style.setProperty("--next-color", "#20c7a7");
+    nextAlertEl.style.setProperty("--mini-progress", "0%");
     nextLabelEl.textContent = "다음 알림";
     nextValueEl.textContent = "--";
     nextDetailEl.textContent = "스킬 키를 누르면 시작됩니다.";
@@ -59,7 +61,9 @@ function renderNext(next) {
 
   const { snapshot, alertMs: ms } = next;
   phaseEl.textContent = phaseLabel(snapshot.phase);
+  nextAlertEl.className = `next-alert ${phaseClass(snapshot.phase)}`;
   nextAlertEl.style.setProperty("--next-color", snapshot.color);
+  nextAlertEl.style.setProperty("--mini-progress", `${progressPercent(snapshot)}%`);
   nextColorEl.style.setProperty("--next-color", snapshot.color);
   nextLabelEl.textContent = snapshot.phase === "expired" ? "만료됨" : "다음 알림";
   nextValueEl.textContent = ms === 0 ? "지금" : formatDuration(ms);
@@ -70,11 +74,14 @@ function renderRows(items) {
   listEl.innerHTML = "";
   for (const snapshot of items.slice(0, 4)) {
     const row = document.createElement("div");
-    row.className = "mini-row";
+    row.className = `mini-row ${phaseClass(snapshot.phase)}`;
+    row.style.setProperty("--row-color", snapshot.color);
+    row.style.setProperty("--mini-progress", `${progressPercent(snapshot)}%`);
     row.innerHTML = `
-      <span class="mini-dot" style="--row-color:${escapeAttribute(snapshot.color)}"></span>
+      <span class="mini-dot"></span>
       <span class="mini-name">${escapeHtml(snapshot.name)}</span>
       <span class="mini-time">${rowTime(snapshot)}</span>
+      <span class="mini-progress" aria-hidden="true"><span class="mini-progress-fill"></span></span>
     `;
     listEl.appendChild(row);
   }
@@ -100,6 +107,22 @@ function phaseLabel(phase) {
     warning: "점멸",
     expired: "만료",
   }[phase ?? "waiting"];
+}
+
+function phaseClass(phase) {
+  return ["waiting", "running", "warning", "expired"].includes(phase) ? phase : "waiting";
+}
+
+function progressPercent(snapshot) {
+  if (!snapshot || snapshot.phase === "waiting") return 0;
+  if (snapshot.phase === "expired" || snapshot.overdue_ms != null) return 100;
+
+  const duration = Number(snapshot.duration_ms ?? 0);
+  const remaining = Number(snapshot.remaining_ms ?? duration);
+  if (!Number.isFinite(duration) || duration <= 0 || !Number.isFinite(remaining)) return 0;
+
+  const elapsed = duration - Math.max(0, remaining);
+  return Math.min(100, Math.max(0, (elapsed / duration) * 100));
 }
 
 function formatDuration(ms) {
@@ -130,6 +153,7 @@ async function mockInvoke(command) {
       name: "야누스",
       color: "#ff3344",
       phase: "running",
+      duration_ms: 120_000,
       warning_before_ms: 5_000,
       remaining_ms: 92_000,
       overdue_ms: null,

@@ -160,16 +160,37 @@ h1 {
   align-items: center;
   min-height: 64px;
   padding: 11px;
+  overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--panel);
   color: var(--text);
   text-align: left;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    box-shadow 160ms ease;
 }
 
 .profile-item.active {
   border-color: rgba(239, 68, 68, 0.72);
   background: #242126;
+}
+
+.profile-item.running {
+  border-color: rgba(32, 199, 167, 0.72);
+  background: linear-gradient(90deg, rgba(32, 199, 167, 0.18), rgba(25, 27, 31, 0.92) 72%);
+  box-shadow: inset 0 0 0 1px rgba(32, 199, 167, 0.12);
+}
+
+.profile-item.warning {
+  border-color: rgba(244, 183, 64, 0.82);
+  background: linear-gradient(90deg, rgba(244, 183, 64, 0.18), rgba(25, 27, 31, 0.92) 72%);
+}
+
+.profile-item.expired {
+  border-color: rgba(239, 68, 68, 0.86);
+  background: linear-gradient(90deg, rgba(239, 68, 68, 0.2), rgba(25, 27, 31, 0.92) 72%);
 }
 
 .profile-color,
@@ -190,6 +211,11 @@ h1 {
   white-space: nowrap;
 }
 
+.profile-main {
+  display: block;
+  min-width: 0;
+}
+
 .profile-meta {
   display: flex;
   gap: 8px;
@@ -198,12 +224,57 @@ h1 {
   font-size: 12px;
 }
 
+.profile-progress,
+.timer-progress {
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  background: rgba(8, 10, 12, 0.78);
+}
+
+.profile-progress {
+  height: 5px;
+  margin-top: 8px;
+}
+
+.profile-progress-fill,
+.timer-progress-fill {
+  display: block;
+  width: var(--timer-progress, 0%);
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--profile-color), var(--teal));
+  box-shadow: 0 0 14px color-mix(in srgb, var(--profile-color) 70%, transparent);
+  transition: width 180ms linear;
+}
+
+.profile-item.waiting .profile-progress {
+  opacity: 0.34;
+}
+
 .phase-badge {
   padding: 3px 7px;
   border-radius: 999px;
   background: #2b2f36;
   color: var(--soft);
   font-size: 12px;
+}
+
+.profile-item.running .phase-badge {
+  background: rgba(32, 199, 167, 0.18);
+  color: #dffcf8;
+}
+
+.profile-item.warning .phase-badge {
+  background: rgba(244, 183, 64, 0.2);
+  color: #ffe7ad;
+}
+
+.profile-item.expired .phase-badge {
+  background: rgba(239, 68, 68, 0.22);
+  color: #ffd0d0;
 }
 
 .workspace {
@@ -351,20 +422,75 @@ input:focus {
   grid-template-columns: 10px 1fr auto;
   gap: 10px;
   align-items: center;
+  min-height: 66px;
   padding: 11px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #15171b;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.timer-row.running {
+  border-color: rgba(32, 199, 167, 0.74);
+  background: linear-gradient(90deg, rgba(32, 199, 167, 0.18), #15171b 76%);
+  box-shadow: inset 0 0 0 1px rgba(32, 199, 167, 0.1);
+}
+
+.timer-row.warning {
+  border-color: rgba(244, 183, 64, 0.86);
+  background: linear-gradient(90deg, rgba(244, 183, 64, 0.18), #15171b 76%);
+}
+
+.timer-row.expired {
+  border-color: rgba(239, 68, 68, 0.9);
+  background: linear-gradient(90deg, rgba(239, 68, 68, 0.2), #15171b 76%);
+}
+
+.timer-copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
 }
 
 .timer-title {
+  display: block;
+  overflow: hidden;
   font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .timer-sub {
-  margin-top: 3px;
+  display: block;
   color: var(--muted);
   font-size: 12px;
+  font-weight: 700;
+}
+
+.timer-row.running .timer-sub,
+.timer-row.running .timer-value {
+  color: var(--teal);
+}
+
+.timer-row.warning .timer-sub,
+.timer-row.warning .timer-value {
+  color: var(--amber);
+}
+
+.timer-row.expired .timer-sub,
+.timer-row.expired .timer-value {
+  color: #ff8d8d;
+}
+
+.timer-progress {
+  height: 6px;
+}
+
+.timer-row.waiting .timer-progress {
+  opacity: 0.32;
 }
 
 .timer-value {

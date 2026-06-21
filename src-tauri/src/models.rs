@@ -33,6 +33,7 @@ pub struct TimerSnapshot {
     pub name: String,
     pub color: String,
     pub phase: String,
+    pub duration_ms: u64,
     pub warning_before_ms: u64,
     pub remaining_ms: Option<u64>,
     pub overdue_ms: Option<u64>,
@@ -81,6 +82,19 @@ impl AppSettings {
     pub fn normalized(mut self) -> Self {
         if self.profiles.is_empty() {
             self.profiles = Self::default().profiles;
+        }
+        self
+    }
+
+    pub fn normalized_with_missing_app_filters(mut self, missing_profile_ids: &[String]) -> Self {
+        self = self.normalized();
+        for profile in &mut self.profiles {
+            if profile.id == "janus"
+                && profile.app_filter.trim().is_empty()
+                && missing_profile_ids.iter().any(|id| id == &profile.id)
+            {
+                profile.app_filter = "MapleStory".to_string();
+            }
         }
         self
     }
@@ -162,6 +176,7 @@ pub fn snapshot_from_phase(profile: &TimerProfile, phase: TimerPhase) -> TimerSn
             name: profile.name.clone(),
             color: profile.color.clone(),
             phase: "waiting".to_string(),
+            duration_ms: profile.duration_ms,
             warning_before_ms: profile.warning_before_ms,
             remaining_ms: None,
             overdue_ms: None,
@@ -171,6 +186,7 @@ pub fn snapshot_from_phase(profile: &TimerProfile, phase: TimerPhase) -> TimerSn
             name: profile.name.clone(),
             color: profile.color.clone(),
             phase: "running".to_string(),
+            duration_ms: profile.duration_ms,
             warning_before_ms: profile.warning_before_ms,
             remaining_ms: Some(remaining_ms),
             overdue_ms: None,
@@ -180,6 +196,7 @@ pub fn snapshot_from_phase(profile: &TimerProfile, phase: TimerPhase) -> TimerSn
             name: profile.name.clone(),
             color: profile.color.clone(),
             phase: "warning".to_string(),
+            duration_ms: profile.duration_ms,
             warning_before_ms: profile.warning_before_ms,
             remaining_ms: Some(remaining_ms),
             overdue_ms: None,
@@ -189,6 +206,7 @@ pub fn snapshot_from_phase(profile: &TimerProfile, phase: TimerPhase) -> TimerSn
             name: profile.name.clone(),
             color: profile.color.clone(),
             phase: "expired".to_string(),
+            duration_ms: profile.duration_ms,
             warning_before_ms: profile.warning_before_ms,
             remaining_ms: None,
             overdue_ms: Some(overdue_ms),
@@ -389,6 +407,10 @@ mod tests {
         assert_eq!(
             snapshot_from_phase(&timer_profile, TimerPhase::Waiting).warning_before_ms,
             5_000
+        );
+        assert_eq!(
+            snapshot_from_phase(&timer_profile, TimerPhase::Waiting).duration_ms,
+            120_000
         );
         assert_eq!(
             snapshot_from_phase(&timer_profile, TimerPhase::Running { remaining_ms: 1 }).phase,

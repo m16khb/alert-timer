@@ -72,13 +72,13 @@ AlertTimer는 메이플스토리처럼 화면 집중도가 높은 게임을 할 
 또는 Tauri가 생성한 원본 설치 파일을 실행해도 됩니다.
 
 ```powershell
-.\src-tauri\target\release\bundle\nsis\AlertTimer_0.1.4_x64-setup.exe
+.\src-tauri\target\release\bundle\nsis\AlertTimer_0.1.6_x64-setup.exe
 ```
 
 MSI가 필요한 환경에서는 아래 파일을 사용할 수 있습니다.
 
 ```powershell
-.\src-tauri\target\release\bundle\msi\AlertTimer_0.1.4_x64_en-US.msi
+.\src-tauri\target\release\bundle\msi\AlertTimer_0.1.6_x64_en-US.msi
 ```
 
 설치 없이 바로 실행하려면 릴리스 실행 파일을 실행합니다.
@@ -258,13 +258,13 @@ The easiest installer is available at the project root:
 You can also run the original NSIS setup file:
 
 ```powershell
-.\src-tauri\target\release\bundle\nsis\AlertTimer_0.1.4_x64-setup.exe
+.\src-tauri\target\release\bundle\nsis\AlertTimer_0.1.6_x64-setup.exe
 ```
 
 For MSI-based deployment, use:
 
 ```powershell
-.\src-tauri\target\release\bundle\msi\AlertTimer_0.1.4_x64_en-US.msi
+.\src-tauri\target\release\bundle\msi\AlertTimer_0.1.6_x64_en-US.msi
 ```
 
 To run without installing:

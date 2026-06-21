@@ -63,13 +63,15 @@ function renderProfiles() {
   profileList.innerHTML = "";
   for (const profile of settings.profiles) {
     const snapshot = snapshotFor(profile.id);
+    const phase = snapshot?.phase ?? "waiting";
     const item = document.createElement("button");
     item.type = "button";
-    item.className = `profile-item ${profile.id === selectedId ? "active" : ""}`;
+    item.className = `profile-item ${profile.id === selectedId ? "active" : ""} ${phaseClass(phase)}`;
     item.style.setProperty("--profile-color", profile.color);
+    item.style.setProperty("--timer-progress", `${progressPercent(snapshot)}%`);
     item.innerHTML = `
       <span class="profile-color"></span>
-      <span>
+      <span class="profile-main">
         <span class="profile-name">${escapeHtml(profile.name)}</span>
         <span class="profile-meta">
           <span>${escapeHtml(profile.key || "-")}</span>
@@ -77,8 +79,9 @@ function renderProfiles() {
           <span>${profile.duration_seconds}s</span>
           <span>${profile.cycle_key_count}회/사이클</span>
         </span>
+        <span class="profile-progress" aria-hidden="true"><span class="profile-progress-fill"></span></span>
       </span>
-      <span class="phase-badge">${phaseLabel(snapshot?.phase)}</span>
+      <span class="phase-badge">${phaseLabel(phase)}</span>
     `;
     item.addEventListener("click", () => {
       selectedId = profile.id;
@@ -143,12 +146,15 @@ function renderStatusOnly() {
     const snapshot = snapshotFor(profile.id);
     const phase = snapshot?.phase ?? "waiting";
     const row = document.createElement("div");
-    row.className = "timer-row";
+    row.className = `timer-row ${phaseClass(phase)}`;
+    row.style.setProperty("--profile-color", profile.color);
+    row.style.setProperty("--timer-progress", `${progressPercent(snapshot)}%`);
     row.innerHTML = `
-      <span class="timer-dot" style="--profile-color:${profile.color}"></span>
-      <span>
+      <span class="timer-dot"></span>
+      <span class="timer-copy">
         <span class="timer-title">${escapeHtml(profile.name)}</span>
         <span class="timer-sub">${phaseLabel(phase)}</span>
+        <span class="timer-progress" aria-hidden="true"><span class="timer-progress-fill"></span></span>
       </span>
       <span class="timer-value">${timeLabel(snapshot)}</span>
     `;
@@ -278,6 +284,22 @@ function phaseLabel(phase) {
   }[phase ?? "waiting"];
 }
 
+function phaseClass(phase) {
+  return ["waiting", "running", "warning", "expired"].includes(phase) ? phase : "waiting";
+}
+
+function progressPercent(snapshot) {
+  if (!snapshot || snapshot.phase === "waiting") return 0;
+  if (snapshot.phase === "expired" || snapshot.overdue_ms != null) return 100;
+
+  const duration = Number(snapshot.duration_ms ?? 0);
+  const remaining = Number(snapshot.remaining_ms ?? duration);
+  if (!Number.isFinite(duration) || duration <= 0 || !Number.isFinite(remaining)) return 0;
+
+  const elapsed = duration - Math.max(0, remaining);
+  return Math.min(100, Math.max(0, (elapsed / duration) * 100));
+}
+
 function timeLabel(snapshot) {
   if (!snapshot) return "--";
   if (snapshot.remaining_ms != null) return formatMs(snapshot.remaining_ms);
@@ -327,6 +349,7 @@ async function mockInvoke(command, payload) {
       name: profile.name,
       color: profile.color,
       phase: "waiting",
+      duration_ms: profile.duration_seconds * 1000,
       warning_before_ms: profile.warning_before_seconds * 1000,
       remaining_ms: null,
       overdue_ms: null,
