@@ -87,7 +87,10 @@ impl AppSettings {
     }
 
     pub fn to_timer_profiles(&self) -> Vec<TimerProfile> {
-        self.profiles.iter().map(SkillProfile::to_timer_profile).collect()
+        self.profiles
+            .iter()
+            .map(SkillProfile::to_timer_profile)
+            .collect()
     }
 }
 
@@ -112,7 +115,10 @@ impl SkillProfile {
             ));
         }
         if self.cycle_key_count == 0 || self.cycle_key_count > 10 {
-            return Err(format!("{} 한 사이클 키 입력 수는 1-10 사이여야 합니다.", self.name));
+            return Err(format!(
+                "{} 한 사이클 키 입력 수는 1-10 사이여야 합니다.",
+                self.name
+            ));
         }
         if !self.color.starts_with('#')
             || self.color.len() != 7
@@ -342,7 +348,10 @@ mod tests {
     fn snapshots_and_alert_payloads_map_phases_for_frontend() {
         let timer_profile = valid_profile().to_timer_profile();
 
-        assert_eq!(snapshot_from_phase(&timer_profile, TimerPhase::Waiting).phase, "waiting");
+        assert_eq!(
+            snapshot_from_phase(&timer_profile, TimerPhase::Waiting).phase,
+            "waiting"
+        );
         assert_eq!(
             snapshot_from_phase(&timer_profile, TimerPhase::Running { remaining_ms: 1 }).phase,
             "running"

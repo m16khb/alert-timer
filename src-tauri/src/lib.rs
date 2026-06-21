@@ -4,8 +4,10 @@ mod overlay;
 mod settings_store;
 mod tray;
 
-use alert_timer_core::{overlay_frame, OverlayIntensity, TimerEngine};
-use models::{alert_payloads, snapshot_from_phase, AppSettings, OverlayFramePayload, TimerSnapshot};
+use alert_timer_core::{OverlayIntensity, TimerEngine, overlay_frame};
+use models::{
+    AppSettings, OverlayFramePayload, TimerSnapshot, alert_payloads, snapshot_from_phase,
+};
 use parking_lot::Mutex;
 use std::sync::Arc;
 use std::sync::mpsc;
@@ -121,20 +123,22 @@ fn start_runtime_loop(app: AppHandle, state: Arc<AppState>) {
 
     thread::Builder::new()
         .name("alert-timer-runtime".to_string())
-        .spawn(move || loop {
-            while let Ok(key) = receiver.try_recv() {
-                let now_ms = state.now_ms();
-                let mut engine = state.engine.lock();
-                let events = engine.handle_key_press(&key, now_ms);
-                drop(engine);
+        .spawn(move || {
+            loop {
+                while let Ok(key) = receiver.try_recv() {
+                    let now_ms = state.now_ms();
+                    let mut engine = state.engine.lock();
+                    let events = engine.handle_key_press(&key, now_ms);
+                    drop(engine);
 
-                if !events.is_empty() {
-                    publish_state(&app, &state);
+                    if !events.is_empty() {
+                        publish_state(&app, &state);
+                    }
                 }
-            }
 
-            publish_state(&app, &state);
-            thread::sleep(Duration::from_millis(150));
+                publish_state(&app, &state);
+                thread::sleep(Duration::from_millis(150));
+            }
         })
         .expect("failed to start runtime loop");
 }
