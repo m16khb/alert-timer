@@ -7,8 +7,7 @@ const fallbackSettings = {
       duration_seconds: 120,
       warning_before_seconds: 5,
       color: "#ff3344",
-      skill_press_count: 3,
-      repeat_ignore_window_seconds: 10,
+      cycle_key_count: 3,
       enabled: true,
     },
   ],
@@ -74,7 +73,7 @@ function renderProfiles() {
         <span class="profile-meta">
           <span>${escapeHtml(profile.key || "-")}</span>
           <span>${profile.duration_seconds}s</span>
-          <span>${profile.skill_press_count}회</span>
+          <span>${profile.cycle_key_count}회/사이클</span>
         </span>
       </span>
       <span class="phase-badge">${phaseLabel(snapshot?.phase)}</span>
@@ -102,8 +101,7 @@ function renderEditor() {
       ${field("스킬 키", "key", profile.key, "key-input", true)}
       ${numberField("타이머", "duration_seconds", profile.duration_seconds, 5, 3600)}
       ${numberField("점멸 시작", "warning_before_seconds", profile.warning_before_seconds, 1, 3599)}
-      ${numberField("스킬 연타 횟수", "skill_press_count", profile.skill_press_count, 1, 10)}
-      ${numberField("연타 무시 시간", "repeat_ignore_window_seconds", profile.repeat_ignore_window_seconds, 0, 60)}
+      ${numberField("한 사이클 키 입력 수", "cycle_key_count", profile.cycle_key_count, 1, 10)}
       <label class="field">
         <span>색상</span>
         <input data-field="color" type="color" value="${profile.color}" />
@@ -177,8 +175,7 @@ function addProfile() {
     duration_seconds: 120,
     warning_before_seconds: 5,
     color: "#20c7a7",
-    skill_press_count: 1,
-    repeat_ignore_window_seconds: 0,
+    cycle_key_count: 1,
     enabled: true,
   });
   selectedId = id;

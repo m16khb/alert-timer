@@ -20,8 +20,8 @@ pub struct SkillProfile {
     pub duration_seconds: u64,
     pub warning_before_seconds: u64,
     pub color: String,
-    pub skill_press_count: u8,
-    pub repeat_ignore_window_seconds: u64,
+    #[serde(alias = "skill_press_count")]
+    pub cycle_key_count: u8,
     pub enabled: bool,
 }
 
@@ -63,8 +63,7 @@ impl Default for AppSettings {
                 duration_seconds: 120,
                 warning_before_seconds: 5,
                 color: "#ff3344".to_string(),
-                skill_press_count: 3,
-                repeat_ignore_window_seconds: 10,
+                cycle_key_count: 3,
                 enabled: true,
             }],
             overlay: OverlaySettings {
@@ -112,11 +111,8 @@ impl SkillProfile {
                 self.name
             ));
         }
-        if self.skill_press_count == 0 || self.skill_press_count > 10 {
-            return Err(format!("{} 스킬 연타 횟수는 1-10 사이여야 합니다.", self.name));
-        }
-        if self.repeat_ignore_window_seconds > 60 {
-            return Err(format!("{} 연타 무시 시간은 60초 이하여야 합니다.", self.name));
+        if self.cycle_key_count == 0 || self.cycle_key_count > 10 {
+            return Err(format!("{} 한 사이클 키 입력 수는 1-10 사이여야 합니다.", self.name));
         }
         if !self.color.starts_with('#')
             || self.color.len() != 7
@@ -135,8 +131,7 @@ impl SkillProfile {
             duration_ms: self.duration_seconds.saturating_mul(1000),
             warning_before_ms: self.warning_before_seconds.saturating_mul(1000),
             color: self.color.clone(),
-            skill_press_count: self.skill_press_count,
-            repeat_ignore_window_ms: self.repeat_ignore_window_seconds.saturating_mul(1000),
+            cycle_key_count: self.cycle_key_count,
             enabled: self.enabled,
         }
     }
@@ -216,8 +211,7 @@ mod tests {
             duration_seconds: 120,
             warning_before_seconds: 5,
             color: "#ff3344".to_string(),
-            skill_press_count: 3,
-            repeat_ignore_window_seconds: 10,
+            cycle_key_count: 3,
             enabled: true,
         }
     }
@@ -235,8 +229,7 @@ mod tests {
         let mut profile = valid_profile();
         profile.duration_seconds = 5;
         profile.warning_before_seconds = 4;
-        profile.skill_press_count = 1;
-        profile.repeat_ignore_window_seconds = 60;
+        profile.cycle_key_count = 1;
         profile.color = "#A1b2C3".to_string();
 
         let mut settings = settings_with_profile(profile);
@@ -246,7 +239,7 @@ mod tests {
         settings.overlay.border_thickness_px = 32;
         settings.profiles[0].duration_seconds = 3600;
         settings.profiles[0].warning_before_seconds = 3599;
-        settings.profiles[0].skill_press_count = 10;
+        settings.profiles[0].cycle_key_count = 10;
         assert!(settings.validate().is_ok());
     }
 
@@ -270,14 +263,11 @@ mod tests {
         assert!(settings.validate().is_err());
         settings.profiles[0].warning_before_seconds = 5;
 
-        settings.profiles[0].skill_press_count = 0;
+        settings.profiles[0].cycle_key_count = 0;
         assert!(settings.validate().is_err());
-        settings.profiles[0].skill_press_count = 11;
+        settings.profiles[0].cycle_key_count = 11;
         assert!(settings.validate().is_err());
-        settings.profiles[0].skill_press_count = 3;
-
-        settings.profiles[0].repeat_ignore_window_seconds = 61;
-        assert!(settings.validate().is_err());
+        settings.profiles[0].cycle_key_count = 3;
     }
 
     #[test]
@@ -317,7 +307,35 @@ mod tests {
         assert_eq!(timer_profile.id, "janus");
         assert_eq!(timer_profile.duration_ms, 120_000);
         assert_eq!(timer_profile.warning_before_ms, 5_000);
-        assert_eq!(timer_profile.repeat_ignore_window_ms, 10_000);
+        assert_eq!(timer_profile.cycle_key_count, 3);
+    }
+
+    #[test]
+    fn legacy_skill_press_count_settings_load_as_cycle_key_count() {
+        let settings: AppSettings = serde_json::from_str(
+            r##"{
+              "profiles": [
+                {
+                  "id": "janus",
+                  "name": "야누스",
+                  "key": "]",
+                  "duration_seconds": 120,
+                  "warning_before_seconds": 5,
+                  "color": "#ff3344",
+                  "skill_press_count": 3,
+                  "repeat_ignore_window_seconds": 10,
+                  "enabled": true
+                }
+              ],
+              "overlay": {
+                "border_thickness_px": 8
+              }
+            }"##,
+        )
+        .expect("legacy settings should deserialize");
+
+        assert_eq!(settings.profiles[0].cycle_key_count, 3);
+        assert!(settings.validate().is_ok());
     }
 
     #[test]

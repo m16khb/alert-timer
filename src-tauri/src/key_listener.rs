@@ -32,11 +32,15 @@ fn publish_key(key: String) {
 #[cfg(target_os = "windows")]
 mod windows_impl {
     use super::publish_key;
+    use std::collections::HashSet;
+    use std::sync::{Mutex, OnceLock};
     use windows_sys::Win32::Foundation::{LPARAM, LRESULT, WPARAM};
     use windows_sys::Win32::UI::WindowsAndMessaging::{
         CallNextHookEx, DispatchMessageW, GetMessageW, SetWindowsHookExW, TranslateMessage,
-        KBDLLHOOKSTRUCT, MSG, WH_KEYBOARD_LL, WM_KEYDOWN, WM_SYSKEYDOWN,
+        KBDLLHOOKSTRUCT, MSG, WH_KEYBOARD_LL, WM_KEYDOWN, WM_KEYUP, WM_SYSKEYDOWN, WM_SYSKEYUP,
     };
+
+    static PRESSED_KEYS: OnceLock<Mutex<PressedKeyTracker>> = OnceLock::new();
 
     pub fn message_loop() {
         let hook = unsafe {
@@ -58,12 +62,41 @@ mod windows_impl {
     unsafe extern "system" fn keyboard_proc(code: i32, w_param: WPARAM, l_param: LPARAM) -> LRESULT {
         if code >= 0 && (w_param as u32 == WM_KEYDOWN || w_param as u32 == WM_SYSKEYDOWN) {
             let keyboard = unsafe { *(l_param as *const KBDLLHOOKSTRUCT) };
-            if let Some(key) = key_name_from_vk(keyboard.vkCode) {
-                publish_key(key);
+            if is_fresh_keydown(keyboard.vkCode).is_some_and(|fresh| fresh) {
+                if let Some(key) = key_name_from_vk(keyboard.vkCode) {
+                    publish_key(key);
+                }
+            }
+        } else if code >= 0 && (w_param as u32 == WM_KEYUP || w_param as u32 == WM_SYSKEYUP) {
+            let keyboard = unsafe { *(l_param as *const KBDLLHOOKSTRUCT) };
+            if let Some(tracker) = PRESSED_KEYS.get() {
+                if let Ok(mut tracker) = tracker.lock() {
+                    tracker.mark_up(keyboard.vkCode);
+                }
             }
         }
 
         unsafe { CallNextHookEx(std::ptr::null_mut(), code, w_param, l_param) }
+    }
+
+    fn is_fresh_keydown(vk_code: u32) -> Option<bool> {
+        let tracker = PRESSED_KEYS.get_or_init(|| Mutex::new(PressedKeyTracker::default()));
+        tracker.lock().ok().map(|mut tracker| tracker.mark_down(vk_code))
+    }
+
+    #[derive(Debug, Default)]
+    struct PressedKeyTracker {
+        pressed: HashSet<u32>,
+    }
+
+    impl PressedKeyTracker {
+        fn mark_down(&mut self, vk_code: u32) -> bool {
+            self.pressed.insert(vk_code)
+        }
+
+        fn mark_up(&mut self, vk_code: u32) {
+            self.pressed.remove(&vk_code);
+        }
     }
 
     fn key_name_from_vk(vk_code: u32) -> Option<String> {
@@ -96,6 +129,16 @@ mod windows_impl {
         #[test]
         fn maps_closing_bracket_key() {
             assert_eq!(key_name_from_vk(0xDD), Some("]".to_string()));
+        }
+
+        #[test]
+        fn key_repeat_is_suppressed_until_keyup() {
+            let mut tracker = PressedKeyTracker::default();
+
+            assert!(tracker.mark_down(0xDD));
+            assert!(!tracker.mark_down(0xDD));
+            tracker.mark_up(0xDD);
+            assert!(tracker.mark_down(0xDD));
         }
     }
 }
