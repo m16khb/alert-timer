@@ -9,6 +9,11 @@ pub fn build(app: &AppHandle) -> tauri::Result<()> {
     let menu = Menu::with_items(app, &[&open, &mini, &quit])?;
 
     TrayIconBuilder::with_id("main")
+        .icon(
+            app.default_window_icon()
+                .expect("default window icon")
+                .clone(),
+        )
         .tooltip("AlertTimer")
         .menu(&menu)
         .show_menu_on_left_click(false)

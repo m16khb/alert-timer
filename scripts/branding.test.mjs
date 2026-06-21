@@ -11,7 +11,9 @@ const miniHtml = await readFile(new URL("../app/mini.html", import.meta.url), "u
 const appJs = await readFile(new URL("../app/app.js", import.meta.url), "utf8");
 const miniJs = await readFile(new URL("../app/mini.js", import.meta.url), "utf8");
 const overlayCss = await readFile(new URL("../app/overlay.css", import.meta.url), "utf8");
+const packageJson = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
 const readme = await readFile(new URL("../README.md", import.meta.url), "utf8");
+const cargoToml = await readFile(new URL("../src-tauri/Cargo.toml", import.meta.url), "utf8");
 const mainRs = await readFile(new URL("../src-tauri/src/main.rs", import.meta.url), "utf8");
 const libRs = await readFile(new URL("../src-tauri/src/lib.rs", import.meta.url), "utf8");
 const trayRs = await readFile(new URL("../src-tauri/src/tray.rs", import.meta.url), "utf8");
@@ -55,6 +57,11 @@ assert(
 );
 
 assert(
+  trayRs.includes(".icon(") && trayRs.includes("default_window_icon"),
+  "Tray icon should explicitly use the bundled app icon",
+);
+
+assert(
   libRs.includes('window.label() == "mini"'),
   "Closing the mini timer window should hide it to the tray instead of exiting",
 );
@@ -64,4 +71,15 @@ assert(
     overlayCss.includes("inset: 0") &&
     !overlayCss.includes("100vw"),
   "Overlay border should be fixed to all viewport edges instead of using 100vw sizing",
+);
+
+assert(
+  packageJson.version === tauriConfig.version &&
+    cargoToml.includes(`version = "${tauriConfig.version}"`),
+  "package.json, Cargo.toml, and tauri.conf.json should share the same app version",
+);
+
+assert(
+  tauriConfig.version !== "0.1.0",
+  "App version should be bumped after the icon refresh so Windows treats installer.exe as an update",
 );
