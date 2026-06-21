@@ -1,3 +1,4 @@
+mod diagnostics;
 mod key_listener;
 mod models;
 mod overlay;
@@ -147,6 +148,8 @@ fn start_runtime_loop(app: AppHandle, state: Arc<AppState>) {
                         now_ms,
                     );
                     drop(engine);
+
+                    let _ = diagnostics::write_key_diagnostic(&app, &key_press, &events, now_ms);
 
                     if !events.is_empty() {
                         publish_state(&app, &state);
