@@ -43,6 +43,7 @@ AlertTimer는 메이플스토리처럼 화면 집중도가 높은 게임을 할 
 | 점멸 시작 | 만료 5초 전 |
 | 색상 | 빨간색 |
 | 한 사이클 키 입력 수 | 3 |
+| 미완성 사이클 초기화 | 첫 입력 후 30초 |
 
 현재 구현은 “10초 안에 3번 눌러야 리셋” 방식도 아니고, 시간 기반 무시 방식도 아닙니다.
 
@@ -51,8 +52,9 @@ AlertTimer는 메이플스토리처럼 화면 집중도가 높은 게임을 할 
 1. `]`를 처음 누르면 야누스 타이머가 즉시 리셋됩니다.
 2. 두 번째와 세 번째 `]` 입력은 같은 설치 사이클에 포함되므로 타이머를 다시 리셋하지 않습니다.
 3. 네 번째 `]` 입력은 다음 사이클의 첫 입력이므로 타이머를 다시 리셋합니다.
+4. 첫 입력 후 30초 안에 사이클이 끝나지 않으면 카운터가 0으로 초기화되고, 다음 `]` 입력은 새 사이클의 첫 입력으로 처리됩니다.
 
-즉, `한 사이클 키 입력 수` 값 `3`은 “같은 키 3번까지를 한 사이클로 친다”는 의미입니다. 별도의 무시 시간 조건은 없습니다.
+즉, `한 사이클 키 입력 수` 값 `3`은 “같은 키 3번까지를 한 사이클로 친다”는 의미입니다. 별도의 무시 시간 입력 필드는 없습니다.
 
 ### 설치 방법
 
@@ -219,6 +221,7 @@ Default values:
 | Warning start | 5 seconds before expiration |
 | Color | Red |
 | Cycle key count | 3 |
+| Incomplete cycle reset | 30 seconds after the first keydown |
 
 The app does not require pressing the key 3 times within 10 seconds, and it does not use a time-based ignore window.
 
@@ -227,8 +230,9 @@ Current behavior:
 1. The first `]` press immediately resets the Janus timer.
 2. The second and third `]` presses belong to the same skill cycle and do not reset the timer again.
 3. The fourth `]` press starts the next cycle and resets the timer again.
+4. If the cycle is not completed within 30 seconds after the first keydown, the counter resets to zero and the next `]` press becomes the first press of a new cycle.
 
-In other words, `cycle_key_count = 3` means “treat up to three matching keydowns as one skill cycle.” There is no separate ignore-time field.
+In other words, `cycle_key_count = 3` means “treat up to three matching keydowns as one skill cycle.” There is no separate ignore-time input field.
 
 ### Installation
 

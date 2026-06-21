@@ -1,3 +1,5 @@
+const CYCLE_RESET_AFTER_MS: u64 = 30_000;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TimerProfile {
     pub id: String,
@@ -56,6 +58,7 @@ pub struct OverlayFrame {
 struct TimerRuntime {
     profile: TimerProfile,
     started_at_ms: Option<u64>,
+    cycle_started_at_ms: Option<u64>,
     cycle_keydowns_seen: u8,
 }
 
@@ -72,6 +75,7 @@ impl TimerEngine {
                 .map(|profile| TimerRuntime {
                     profile,
                     started_at_ms: None,
+                    cycle_started_at_ms: None,
                     cycle_keydowns_seen: 0,
                 })
                 .collect(),
@@ -91,6 +95,7 @@ impl TimerEngine {
             .map(|profile| TimerRuntime {
                 profile,
                 started_at_ms: None,
+                cycle_started_at_ms: None,
                 cycle_keydowns_seen: 0,
             })
             .collect();
@@ -105,8 +110,11 @@ impl TimerEngine {
                 continue;
             }
 
+            runtime.reset_expired_cycle(now_ms);
+
             if runtime.cycle_keydowns_seen == 0 {
                 runtime.started_at_ms = Some(now_ms);
+                runtime.cycle_started_at_ms = Some(now_ms);
                 events.push(TimerEvent::Reset {
                     profile_id: runtime.profile.id.clone(),
                 });
@@ -152,9 +160,20 @@ impl TimerEngine {
 }
 
 impl TimerRuntime {
+    fn reset_expired_cycle(&mut self, now_ms: u64) {
+        if self.cycle_started_at_ms.is_some_and(|cycle_started_at_ms| {
+            now_ms.saturating_sub(cycle_started_at_ms) >= CYCLE_RESET_AFTER_MS
+        }) {
+            self.cycle_started_at_ms = None;
+            self.cycle_keydowns_seen = 0;
+        }
+    }
+
     fn advance_cycle(&mut self) {
         let cycle_key_count = self.profile.cycle_key_count.max(1);
-        self.cycle_keydowns_seen = if self.cycle_keydowns_seen.saturating_add(1) >= cycle_key_count {
+        self.cycle_keydowns_seen = if self.cycle_keydowns_seen.saturating_add(1) >= cycle_key_count
+        {
+            self.cycle_started_at_ms = None;
             0
         } else {
             self.cycle_keydowns_seen + 1
@@ -187,7 +206,10 @@ pub fn overlay_frame(alerts: &[AlertSnapshot], now_ms: u64) -> Option<OverlayFra
         return None;
     }
 
-    let intensity = if alerts.iter().any(|alert| alert.phase == AlertPhase::Expired) {
+    let intensity = if alerts
+        .iter()
+        .any(|alert| alert.phase == AlertPhase::Expired)
+    {
         OverlayIntensity::Expired
     } else {
         OverlayIntensity::Warning

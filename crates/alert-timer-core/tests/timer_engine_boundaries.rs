@@ -1,6 +1,6 @@
 use alert_timer_core::{
-    overlay_frame, AlertPhase, AlertSnapshot, OverlayFrame, OverlayIntensity, TimerEngine,
-    TimerEvent, TimerPhase, TimerProfile,
+    AlertPhase, AlertSnapshot, OverlayFrame, OverlayIntensity, TimerEngine, TimerEvent, TimerPhase,
+    TimerProfile, overlay_frame,
 };
 
 fn janus_profile() -> TimerProfile {
@@ -39,8 +39,14 @@ fn multi_press_skills_group_a_fixed_number_of_keydowns_per_cycle() {
             profile_id: "janus".to_string()
         }]
     );
-    assert_eq!(engine.handle_key_press("A", 1_100), Vec::<TimerEvent>::new());
-    assert_eq!(engine.handle_key_press("A", 1_200), Vec::<TimerEvent>::new());
+    assert_eq!(
+        engine.handle_key_press("A", 1_100),
+        Vec::<TimerEvent>::new()
+    );
+    assert_eq!(
+        engine.handle_key_press("A", 1_200),
+        Vec::<TimerEvent>::new()
+    );
     assert_eq!(
         engine.handle_key_press("A", 1_300),
         vec![TimerEvent::Reset {
@@ -49,6 +55,34 @@ fn multi_press_skills_group_a_fixed_number_of_keydowns_per_cycle() {
     );
     assert_eq!(
         engine.phase("janus", 1_300),
+        Some(TimerPhase::Running {
+            remaining_ms: 120_000
+        })
+    );
+}
+
+#[test]
+fn incomplete_cycles_reset_to_zero_after_thirty_seconds() {
+    let mut engine = TimerEngine::new(vec![janus_profile()]);
+
+    assert_eq!(
+        engine.handle_key_press("A", 1_000),
+        vec![TimerEvent::Reset {
+            profile_id: "janus".to_string()
+        }]
+    );
+    assert_eq!(
+        engine.handle_key_press("A", 30_999),
+        Vec::<TimerEvent>::new()
+    );
+    assert_eq!(
+        engine.handle_key_press("A", 31_000),
+        vec![TimerEvent::Reset {
+            profile_id: "janus".to_string()
+        }]
+    );
+    assert_eq!(
+        engine.phase("janus", 31_000),
         Some(TimerPhase::Running {
             remaining_ms: 120_000
         })
@@ -72,14 +106,20 @@ fn first_key_press_resets_timer_and_followup_presses_in_cycle_are_ignored() {
             remaining_ms: 120_000
         })
     );
-    assert_eq!(engine.handle_key_press("A", 2_000), Vec::<TimerEvent>::new());
+    assert_eq!(
+        engine.handle_key_press("A", 2_000),
+        Vec::<TimerEvent>::new()
+    );
     assert_eq!(
         engine.phase("janus", 2_000),
         Some(TimerPhase::Running {
             remaining_ms: 119_000
         })
     );
-    assert_eq!(engine.handle_key_press("A", 10_999), Vec::<TimerEvent>::new());
+    assert_eq!(
+        engine.handle_key_press("A", 10_999),
+        Vec::<TimerEvent>::new()
+    );
 
     assert_eq!(
         engine.handle_key_press("A", 11_001),
@@ -177,7 +217,9 @@ fn phase_boundaries_switch_at_warning_and_expiration_edges() {
     );
     assert_eq!(
         engine.phase("edge", 9_000),
-        Some(TimerPhase::Warning { remaining_ms: 2_000 })
+        Some(TimerPhase::Warning {
+            remaining_ms: 2_000
+        })
     );
     assert_eq!(
         engine.phase("edge", 10_999),
@@ -212,7 +254,9 @@ fn replace_profiles_resets_runtime_state_and_keeps_new_profiles() {
     engine.handle_key_press("A", 0);
     assert_eq!(
         engine.phase("old", 9_000),
-        Some(TimerPhase::Warning { remaining_ms: 1_000 })
+        Some(TimerPhase::Warning {
+            remaining_ms: 1_000
+        })
     );
 
     let mut replacement = profile_with_id("new");
@@ -222,7 +266,10 @@ fn replace_profiles_resets_runtime_state_and_keeps_new_profiles() {
     assert_eq!(engine.profiles(), vec![replacement]);
     assert_eq!(engine.phase("old", 9_000), None);
     assert_eq!(engine.phase("new", 9_000), Some(TimerPhase::Waiting));
-    assert_eq!(engine.handle_key_press("A", 9_000), Vec::<TimerEvent>::new());
+    assert_eq!(
+        engine.handle_key_press("A", 9_000),
+        Vec::<TimerEvent>::new()
+    );
     assert_eq!(engine.handle_key_press("B", 9_000).len(), 1);
 }
 
@@ -243,7 +290,9 @@ fn warning_and_expired_alerts_are_reported_for_parallel_profiles() {
 
     assert_eq!(
         engine.phase("janus", 115_000),
-        Some(TimerPhase::Warning { remaining_ms: 5_000 })
+        Some(TimerPhase::Warning {
+            remaining_ms: 5_000
+        })
     );
     assert_eq!(
         engine.phase("erda", 115_000),
