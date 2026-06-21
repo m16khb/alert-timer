@@ -10,6 +10,7 @@ const indexHtml = await readFile(new URL("../app/index.html", import.meta.url), 
 const miniHtml = await readFile(new URL("../app/mini.html", import.meta.url), "utf8");
 const appJs = await readFile(new URL("../app/app.js", import.meta.url), "utf8");
 const miniJs = await readFile(new URL("../app/mini.js", import.meta.url), "utf8");
+const stylesCss = await readFile(new URL("../app/styles.css", import.meta.url), "utf8");
 const overlayCss = await readFile(new URL("../app/overlay.css", import.meta.url), "utf8");
 const packageJson = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
 const readme = await readFile(new URL("../README.md", import.meta.url), "utf8");
@@ -20,6 +21,7 @@ const trayRs = await readFile(new URL("../src-tauri/src/tray.rs", import.meta.ur
 const tauriConfig = JSON.parse(
   await readFile(new URL("../src-tauri/tauri.conf.json", import.meta.url), "utf8"),
 );
+const mainWindow = tauriConfig.app.windows.find((window) => window.label === "main");
 
 assert(
   indexHtml.includes("by 엘리시움 사과팬케이크"),
@@ -49,6 +51,18 @@ assert(
 assert(
   tauriConfig.app.windows.some((window) => window.label === "mini" && window.url === "mini.html"),
   "Tauri config should define a mini timer window",
+);
+
+assert(mainWindow, "Tauri config should define a main window");
+
+assert(
+  mainWindow.width >= 1180 && mainWindow.minWidth >= 1080,
+  "Main window should open wide enough for the fixed sidebar, editor, and live monitor without horizontal scroll",
+);
+
+assert(
+  stylesCss.includes("overflow: hidden"),
+  "The app shell should prevent page-level scrollbars on initial launch",
 );
 
 assert(
