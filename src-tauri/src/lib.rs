@@ -99,7 +99,7 @@ pub fn run() {
             Ok(())
         })
         .on_window_event(|window, event| {
-            if window.label() == "main" {
+            if window.label() == "main" || window.label() == "mini" {
                 if let WindowEvent::CloseRequested { api, .. } = event {
                     api.prevent_close();
                     let _ = window.hide();

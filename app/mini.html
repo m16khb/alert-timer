@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AlertTimer Mini</title>
+    <link rel="stylesheet" href="./mini.css" />
+    <script src="./mini.js" defer></script>
+  </head>
+  <body>
+    <main class="mini-shell">
+      <header class="mini-header">
+        <div>
+          <h1>AlertTimer</h1>
+          <p>by 엘리시움 사과팬케이크</p>
+        </div>
+        <span class="status-chip" id="mini-phase">대기</span>
+      </header>
+
+      <section class="next-alert" id="next-alert">
+        <div class="next-color" id="next-color"></div>
+        <div>
+          <p class="next-label" id="next-label">다음 알림</p>
+          <strong id="next-value">--</strong>
+          <span id="next-detail">스킬 키를 누르면 시작됩니다.</span>
+        </div>
+      </section>
+
+      <section class="mini-list" id="mini-list" aria-label="타이머 목록"></section>
+    </main>
+  </body>
+</html>

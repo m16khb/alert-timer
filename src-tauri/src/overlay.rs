@@ -6,9 +6,11 @@ pub fn configure(app: &AppHandle) -> tauri::Result<()> {
         return Ok(());
     };
 
+    let _ = window.set_shadow(false);
     if let Some(monitor) = window.primary_monitor()? {
         let position = monitor.position();
         let size = monitor.size();
+        window.set_size(PhysicalSize::new(size.width, size.height))?;
         window.set_position(PhysicalPosition::new(position.x, position.y))?;
         window.set_size(PhysicalSize::new(size.width, size.height))?;
     }

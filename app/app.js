@@ -311,6 +311,7 @@ async function mockInvoke(command, payload) {
       name: profile.name,
       color: profile.color,
       phase: "waiting",
+      warning_before_ms: profile.warning_before_seconds * 1000,
       remaining_ms: null,
       overdue_ms: null,
     }));

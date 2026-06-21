@@ -7,9 +7,17 @@ function assert(condition, message) {
 }
 
 const indexHtml = await readFile(new URL("../app/index.html", import.meta.url), "utf8");
+const miniHtml = await readFile(new URL("../app/mini.html", import.meta.url), "utf8");
 const appJs = await readFile(new URL("../app/app.js", import.meta.url), "utf8");
+const miniJs = await readFile(new URL("../app/mini.js", import.meta.url), "utf8");
+const overlayCss = await readFile(new URL("../app/overlay.css", import.meta.url), "utf8");
 const readme = await readFile(new URL("../README.md", import.meta.url), "utf8");
 const mainRs = await readFile(new URL("../src-tauri/src/main.rs", import.meta.url), "utf8");
+const libRs = await readFile(new URL("../src-tauri/src/lib.rs", import.meta.url), "utf8");
+const trayRs = await readFile(new URL("../src-tauri/src/tray.rs", import.meta.url), "utf8");
+const tauriConfig = JSON.parse(
+  await readFile(new URL("../src-tauri/tauri.conf.json", import.meta.url), "utf8"),
+);
 
 assert(
   indexHtml.includes("by 엘리시움 사과팬케이크"),
@@ -24,4 +32,36 @@ assert(
 assert(
   !appJs.includes("repeat_ignore_window") && !readme.includes("연타 무시 시간"),
   "Ignore-window settings should not appear in the app or README; cycle behavior is count-based",
+);
+
+assert(
+  miniHtml.includes("mini.js") && miniHtml.includes("AlertTimer Mini"),
+  "Mini timer window should have its own HTML entry point",
+);
+
+assert(
+  miniJs.includes("timer://snapshot") && miniJs.includes("next-alert"),
+  "Mini timer window should subscribe to timer snapshots and render the next alert",
+);
+
+assert(
+  tauriConfig.app.windows.some((window) => window.label === "mini" && window.url === "mini.html"),
+  "Tauri config should define a mini timer window",
+);
+
+assert(
+  trayRs.includes("미니 타이머 열기"),
+  "Tray menu should expose the mini timer window",
+);
+
+assert(
+  libRs.includes('window.label() == "mini"'),
+  "Closing the mini timer window should hide it to the tray instead of exiting",
+);
+
+assert(
+  overlayCss.includes("position: fixed") &&
+    overlayCss.includes("inset: 0") &&
+    !overlayCss.includes("100vw"),
+  "Overlay border should be fixed to all viewport edges instead of using 100vw sizing",
 );

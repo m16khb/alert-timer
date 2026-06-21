@@ -31,6 +31,18 @@
         "visible": false,
         "resizable": false,
         "focus": false
+      },
+      {
+        "label": "mini",
+        "title": "AlertTimer Mini",
+        "url": "mini.html",
+        "width": 340,
+        "height": 220,
+        "minWidth": 300,
+        "minHeight": 180,
+        "resizable": false,
+        "fullscreen": false,
+        "visible": false
       }
     ],
     "security": {
