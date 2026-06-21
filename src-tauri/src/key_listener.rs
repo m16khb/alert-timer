@@ -21,7 +21,7 @@ pub fn start(sender: Sender<KeyPress>) -> Result<(), String> {
     std::thread::Builder::new()
         .name("alert-timer-key-listener".to_string())
         .spawn(move || {
-            windows_impl::poll_loop(ready_sender);
+            windows_impl::event_loop(ready_sender);
         })
         .map_err(|error| error.to_string())?;
 
@@ -83,7 +83,6 @@ mod windows_impl {
     const POLL_INTERVAL: Duration = Duration::from_millis(16);
     static PRESSED_KEYS: OnceLock<Mutex<PressedKeyTracker>> = OnceLock::new();
 
-    #[allow(dead_code)]
     pub fn event_loop(ready_sender: SyncSender<Result<(), String>>) {
         let module_handle = unsafe { GetModuleHandleW(std::ptr::null()) };
         let hook =
@@ -140,11 +139,6 @@ mod windows_impl {
             .lock()
             .ok()
             .map(|mut tracker| tracker.mark_down(vk_code))
-    }
-
-    pub fn poll_loop(ready_sender: SyncSender<Result<(), String>>) {
-        let _ = ready_sender.send(Ok(()));
-        poll_forever();
     }
 
     fn poll_forever() {

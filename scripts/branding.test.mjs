@@ -18,6 +18,10 @@ const readme = await readFile(new URL("../README.md", import.meta.url), "utf8");
 const cargoToml = await readFile(new URL("../src-tauri/Cargo.toml", import.meta.url), "utf8");
 const mainRs = await readFile(new URL("../src-tauri/src/main.rs", import.meta.url), "utf8");
 const libRs = await readFile(new URL("../src-tauri/src/lib.rs", import.meta.url), "utf8");
+const keyListenerRs = await readFile(
+  new URL("../src-tauri/src/key_listener.rs", import.meta.url),
+  "utf8",
+);
 const trayRs = await readFile(new URL("../src-tauri/src/tray.rs", import.meta.url), "utf8");
 const tauriConfig = JSON.parse(
   await readFile(new URL("../src-tauri/tauri.conf.json", import.meta.url), "utf8"),
@@ -98,6 +102,12 @@ assert(
 assert(
   libRs.includes('window.label() == "mini"'),
   "Closing the mini timer window should hide it to the tray instead of exiting",
+);
+
+assert(
+  keyListenerRs.includes("windows_impl::event_loop(ready_sender)") &&
+    !keyListenerRs.includes("windows_impl::poll_loop(ready_sender);"),
+  "Global key input should start with the low-level keyboard hook, not polling, so game foreground input is captured reliably",
 );
 
 assert(
