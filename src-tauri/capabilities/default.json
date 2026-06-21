@@ -2,6 +2,6 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
   "description": "Default desktop permissions",
-  "windows": ["main", "overlay"],
+  "windows": ["main", "overlay", "mini"],
   "permissions": ["core:default", "opener:default"]
 }

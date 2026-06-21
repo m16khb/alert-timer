@@ -35,6 +35,7 @@ let settings = structuredClone(fallbackSettings);
 let snapshots = [];
 let selectedId = "janus";
 let dirty = false;
+let loadWarnings = [];
 let privilegeStatus = {
   is_elevated: false,
   can_relaunch_as_admin: false,
@@ -47,15 +48,24 @@ restartAdmin.addEventListener("click", relaunchAsAdmin);
 bootstrap();
 
 async function bootstrap() {
-  settings = normalizeSettings(await invoke("get_settings"));
+  settings = normalizeSettings(await invokeOrFallback("get_settings", fallbackSettings));
   selectedId = settings.profiles[0]?.id ?? null;
-  snapshots = await invoke("get_timer_snapshots");
-  privilegeStatus = await invoke("get_privilege_status");
+  snapshots = snapshotsForSettings(settings);
   render();
-  await listen("timer://snapshot", (event) => {
-    snapshots = event.payload;
-    renderStatusOnly();
-  });
+
+  snapshots = await invokeOrFallback("get_timer_snapshots", snapshotsForSettings(settings));
+  privilegeStatus = await invokeOrFallback("get_privilege_status", privilegeStatus);
+  render();
+
+  try {
+    await listen("timer://snapshot", (event) => {
+      snapshots = Array.isArray(event.payload) ? event.payload : snapshotsForSettings(settings);
+      renderStatusOnly();
+    });
+  } catch (error) {
+    recordLoadWarning("타이머 이벤트 연결 실패", error);
+    render();
+  }
 }
 
 function render() {
@@ -65,7 +75,7 @@ function render() {
   renderOverlaySettings();
   renderPrivilegeStatus();
   profileCount.textContent = `${settings.profiles.length} profiles`;
-  saveState.textContent = dirty ? "수정됨" : "저장됨";
+  saveState.textContent = loadWarnings.length > 0 ? "로드 경고" : dirty ? "수정됨" : "저장됨";
 }
 
 function renderProfiles() {
@@ -229,11 +239,37 @@ async function saveSettings() {
   try {
     settings = normalizeSettings(await invoke("save_settings", { settings }));
     dirty = false;
+    loadWarnings = [];
     saveState.textContent = "저장됨";
     render();
   } catch (error) {
     saveState.textContent = String(error);
   }
+}
+
+async function invokeOrFallback(command, fallbackValue, payload) {
+  let lastError = null;
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    try {
+      return payload === undefined ? await invoke(command) : await invoke(command, payload);
+    } catch (error) {
+      lastError = error;
+      await delay(100);
+    }
+  }
+
+  recordLoadWarning(`${command} 실패`, lastError);
+  return structuredClone(fallbackValue);
+}
+
+function recordLoadWarning(label, error) {
+  const message = `${label}: ${String(error)}`;
+  loadWarnings.push(message);
+  console.warn(message);
+}
+
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function updateProfileField(profile, input) {
@@ -257,11 +293,27 @@ function normalizeSettings(nextSettings) {
   if (!Array.isArray(normalized.profiles) || normalized.profiles.length === 0) {
     normalized.profiles = structuredClone(fallbackSettings.profiles);
   }
-  normalized.overlay ??= structuredClone(fallbackSettings.overlay);
+  normalized.overlay = {
+    ...structuredClone(fallbackSettings.overlay),
+    ...(normalized.overlay ?? {}),
+  };
   for (const profile of normalized.profiles) {
     profile.app_filter ??= "";
   }
   return normalized;
+}
+
+function snapshotsForSettings(nextSettings) {
+  return nextSettings.profiles.map((profile) => ({
+    profile_id: profile.id,
+    name: profile.name,
+    color: profile.color,
+    phase: "waiting",
+    duration_ms: profile.duration_seconds * 1000,
+    warning_before_ms: profile.warning_before_seconds * 1000,
+    remaining_ms: null,
+    overdue_ms: null,
+  }));
 }
 
 function selectedProfile() {
