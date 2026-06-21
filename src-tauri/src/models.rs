@@ -17,6 +17,8 @@ pub struct SkillProfile {
     pub id: String,
     pub name: String,
     pub key: String,
+    #[serde(default)]
+    pub app_filter: String,
     pub duration_seconds: u64,
     pub warning_before_seconds: u64,
     pub color: String,
@@ -61,6 +63,7 @@ impl Default for AppSettings {
                 id: "janus".to_string(),
                 name: "야누스".to_string(),
                 key: "]".to_string(),
+                app_filter: "MapleStory".to_string(),
                 duration_seconds: 120,
                 warning_before_seconds: 5,
                 color: "#ff3344".to_string(),
@@ -75,6 +78,13 @@ impl Default for AppSettings {
 }
 
 impl AppSettings {
+    pub fn normalized(mut self) -> Self {
+        if self.profiles.is_empty() {
+            self.profiles = Self::default().profiles;
+        }
+        self
+    }
+
     pub fn validate(&self) -> Result<(), String> {
         if self.overlay.border_thickness_px < 2 || self.overlay.border_thickness_px > 32 {
             return Err("테두리 두께는 2-32px 사이여야 합니다.".to_string());
@@ -135,6 +145,7 @@ impl SkillProfile {
             id: self.id.clone(),
             name: self.name.clone(),
             key: self.key.clone(),
+            app_filter: self.app_filter.clone(),
             duration_ms: self.duration_seconds.saturating_mul(1000),
             warning_before_ms: self.warning_before_seconds.saturating_mul(1000),
             color: self.color.clone(),
@@ -219,6 +230,7 @@ mod tests {
             id: "janus".to_string(),
             name: "야누스".to_string(),
             key: "A".to_string(),
+            app_filter: "MapleStory".to_string(),
             duration_seconds: 120,
             warning_before_seconds: 5,
             color: "#ff3344".to_string(),
@@ -231,6 +243,22 @@ mod tests {
     fn default_janus_key_is_closing_bracket() {
         let settings = AppSettings::default();
 
+        assert_eq!(settings.profiles[0].id, "janus");
+        assert_eq!(settings.profiles[0].key, "]");
+        assert_eq!(settings.profiles[0].app_filter, "MapleStory");
+    }
+
+    #[test]
+    fn empty_profile_settings_normalize_to_default_janus() {
+        let settings = AppSettings {
+            profiles: Vec::new(),
+            overlay: OverlaySettings {
+                border_thickness_px: 8,
+            },
+        }
+        .normalized();
+
+        assert_eq!(settings.profiles.len(), 1);
         assert_eq!(settings.profiles[0].id, "janus");
         assert_eq!(settings.profiles[0].key, "]");
     }
@@ -316,6 +344,7 @@ mod tests {
         let timer_profile = profile.to_timer_profile();
 
         assert_eq!(timer_profile.id, "janus");
+        assert_eq!(timer_profile.app_filter, "MapleStory");
         assert_eq!(timer_profile.duration_ms, 120_000);
         assert_eq!(timer_profile.warning_before_ms, 5_000);
         assert_eq!(timer_profile.cycle_key_count, 3);

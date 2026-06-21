@@ -1,6 +1,6 @@
 use alert_timer_core::{
-    AlertPhase, AlertSnapshot, OverlayFrame, OverlayIntensity, TimerEngine, TimerEvent, TimerPhase,
-    TimerProfile, overlay_frame,
+    ActiveApplication, AlertPhase, AlertSnapshot, OverlayFrame, OverlayIntensity, TimerEngine,
+    TimerEvent, TimerPhase, TimerProfile, overlay_frame,
 };
 
 fn janus_profile() -> TimerProfile {
@@ -8,6 +8,7 @@ fn janus_profile() -> TimerProfile {
         id: "janus".to_string(),
         name: "야누스".to_string(),
         key: "A".to_string(),
+        app_filter: "".to_string(),
         duration_ms: 120_000,
         warning_before_ms: 5_000,
         color: "#ff3344".to_string(),
@@ -21,11 +22,19 @@ fn profile_with_id(id: &str) -> TimerProfile {
         id: id.to_string(),
         name: id.to_string(),
         key: "A".to_string(),
+        app_filter: "".to_string(),
         duration_ms: 10_000,
         warning_before_ms: 2_000,
         color: "#ff3344".to_string(),
         cycle_key_count: 1,
         enabled: true,
+    }
+}
+
+fn active_application(process_name: &str, window_title: &str) -> ActiveApplication {
+    ActiveApplication {
+        process_name: process_name.to_string(),
+        window_title: window_title.to_string(),
     }
 }
 
@@ -232,6 +241,52 @@ fn key_matching_is_case_insensitive_and_trims_input() {
 
     assert_eq!(
         engine.handle_key_press("F12", 0),
+        vec![TimerEvent::Reset {
+            profile_id: "janus".to_string()
+        }]
+    );
+}
+
+#[test]
+fn app_filter_resets_only_for_matching_foreground_application() {
+    let mut profile = janus_profile();
+    profile.app_filter = "MapleStory".to_string();
+    let mut engine = TimerEngine::new(vec![profile]);
+
+    assert_eq!(
+        engine.handle_key_press_with_app(
+            "A",
+            Some(&active_application("notepad.exe", "Untitled - Notepad")),
+            0
+        ),
+        Vec::<TimerEvent>::new()
+    );
+    assert_eq!(engine.phase("janus", 0), Some(TimerPhase::Waiting));
+
+    assert_eq!(
+        engine.handle_key_press_with_app(
+            "A",
+            Some(&active_application("MapleStory.exe", "MapleStory")),
+            1
+        ),
+        vec![TimerEvent::Reset {
+            profile_id: "janus".to_string()
+        }]
+    );
+}
+
+#[test]
+fn app_filter_can_match_window_title_when_process_name_differs() {
+    let mut profile = janus_profile();
+    profile.app_filter = "maplestory".to_string();
+    let mut engine = TimerEngine::new(vec![profile]);
+
+    assert_eq!(
+        engine.handle_key_press_with_app(
+            "A",
+            Some(&active_application("GameLauncher.exe", "MapleStory")),
+            0
+        ),
         vec![TimerEvent::Reset {
             profile_id: "janus".to_string()
         }]

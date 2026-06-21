@@ -116,7 +116,7 @@ pub fn run() {
 }
 
 fn start_runtime_loop(app: AppHandle, state: Arc<AppState>) {
-    let (sender, receiver) = mpsc::channel::<String>();
+    let (sender, receiver) = mpsc::channel::<key_listener::KeyPress>();
     if let Err(error) = key_listener::start(sender) {
         eprintln!("key listener unavailable: {error}");
     }
@@ -125,10 +125,14 @@ fn start_runtime_loop(app: AppHandle, state: Arc<AppState>) {
         .name("alert-timer-runtime".to_string())
         .spawn(move || {
             loop {
-                while let Ok(key) = receiver.try_recv() {
+                while let Ok(key_press) = receiver.try_recv() {
                     let now_ms = state.now_ms();
                     let mut engine = state.engine.lock();
-                    let events = engine.handle_key_press(&key, now_ms);
+                    let events = engine.handle_key_press_with_app(
+                        &key_press.key,
+                        key_press.application.as_ref(),
+                        now_ms,
+                    );
                     drop(engine);
 
                     if !events.is_empty() {

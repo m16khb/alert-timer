@@ -1,10 +1,17 @@
 const CYCLE_RESET_AFTER_MS: u64 = 30_000;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ActiveApplication {
+    pub process_name: String,
+    pub window_title: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TimerProfile {
     pub id: String,
     pub name: String,
     pub key: String,
+    pub app_filter: String,
     pub duration_ms: u64,
     pub warning_before_ms: u64,
     pub color: String,
@@ -102,11 +109,33 @@ impl TimerEngine {
     }
 
     pub fn handle_key_press(&mut self, key: &str, now_ms: u64) -> Vec<TimerEvent> {
+        self.handle_key_press_inner(key, None, now_ms, false)
+    }
+
+    pub fn handle_key_press_with_app(
+        &mut self,
+        key: &str,
+        application: Option<&ActiveApplication>,
+        now_ms: u64,
+    ) -> Vec<TimerEvent> {
+        self.handle_key_press_inner(key, application, now_ms, true)
+    }
+
+    fn handle_key_press_inner(
+        &mut self,
+        key: &str,
+        application: Option<&ActiveApplication>,
+        now_ms: u64,
+        enforce_app_filter: bool,
+    ) -> Vec<TimerEvent> {
         let normalized_key = normalize_key(key);
         let mut events = Vec::new();
 
         for runtime in &mut self.runtimes {
             if !runtime.profile.enabled || normalize_key(&runtime.profile.key) != normalized_key {
+                continue;
+            }
+            if enforce_app_filter && !runtime.matches_application(application) {
                 continue;
             }
 
@@ -163,6 +192,15 @@ impl TimerEngine {
 }
 
 impl TimerRuntime {
+    fn matches_application(&self, application: Option<&ActiveApplication>) -> bool {
+        let filter = normalize_filter(&self.profile.app_filter);
+        if filter.is_empty() {
+            return true;
+        }
+
+        application.is_some_and(|application| application.matches_filter(&filter))
+    }
+
     fn is_alerting(&self, now_ms: u64) -> bool {
         matches!(
             self.phase(now_ms),
@@ -215,6 +253,13 @@ impl TimerRuntime {
     }
 }
 
+impl ActiveApplication {
+    fn matches_filter(&self, normalized_filter: &str) -> bool {
+        normalize_filter(&self.process_name).contains(normalized_filter)
+            || normalize_filter(&self.window_title).contains(normalized_filter)
+    }
+}
+
 pub fn overlay_frame(alerts: &[AlertSnapshot], now_ms: u64) -> Option<OverlayFrame> {
     if alerts.is_empty() {
         return None;
@@ -243,4 +288,8 @@ pub fn overlay_frame(alerts: &[AlertSnapshot], now_ms: u64) -> Option<OverlayFra
 
 fn normalize_key(key: &str) -> String {
     key.trim().to_ascii_uppercase()
+}
+
+fn normalize_filter(value: &str) -> String {
+    value.trim().to_ascii_lowercase()
 }

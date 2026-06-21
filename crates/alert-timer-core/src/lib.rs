@@ -1,6 +1,6 @@
 pub mod timer_engine;
 
 pub use timer_engine::{
-    AlertPhase, AlertSnapshot, OverlayFrame, OverlayIntensity, TimerEngine, TimerEvent, TimerPhase,
-    TimerProfile, overlay_frame,
+    ActiveApplication, AlertPhase, AlertSnapshot, OverlayFrame, OverlayIntensity, TimerEngine,
+    TimerEvent, TimerPhase, TimerProfile, overlay_frame,
 };

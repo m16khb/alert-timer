@@ -4,6 +4,7 @@ const fallbackSettings = {
       id: "janus",
       name: "야누스",
       key: "]",
+      app_filter: "MapleStory",
       duration_seconds: 120,
       warning_before_seconds: 5,
       color: "#ff3344",
@@ -39,7 +40,7 @@ document.querySelector("#save-settings").addEventListener("click", saveSettings)
 bootstrap();
 
 async function bootstrap() {
-  settings = await invoke("get_settings");
+  settings = normalizeSettings(await invoke("get_settings"));
   selectedId = settings.profiles[0]?.id ?? null;
   snapshots = await invoke("get_timer_snapshots");
   render();
@@ -72,6 +73,7 @@ function renderProfiles() {
         <span class="profile-name">${escapeHtml(profile.name)}</span>
         <span class="profile-meta">
           <span>${escapeHtml(profile.key || "-")}</span>
+          <span>${escapeHtml(profile.app_filter || "모든 앱")}</span>
           <span>${profile.duration_seconds}s</span>
           <span>${profile.cycle_key_count}회/사이클</span>
         </span>
@@ -99,6 +101,7 @@ function renderEditor() {
     <div class="form-grid">
       ${field("이름", "name", profile.name)}
       ${field("스킬 키", "key", profile.key, "key-input", true)}
+      ${field("대상 앱", "app_filter", profile.app_filter ?? "")}
       ${numberField("타이머", "duration_seconds", profile.duration_seconds, 5, 3600)}
       ${numberField("점멸 시작", "warning_before_seconds", profile.warning_before_seconds, 1, 3599)}
       ${numberField("한 사이클 키 입력 수", "cycle_key_count", profile.cycle_key_count, 1, 10)}
@@ -172,6 +175,7 @@ function addProfile() {
     id,
     name: "새 스킬",
     key: "",
+    app_filter: "",
     duration_seconds: 120,
     warning_before_seconds: 5,
     color: "#20c7a7",
@@ -192,7 +196,7 @@ function deleteSelectedProfile() {
 
 async function saveSettings() {
   try {
-    settings = await invoke("save_settings", { settings });
+    settings = normalizeSettings(await invoke("save_settings", { settings }));
     dirty = false;
     saveState.textContent = "저장됨";
     render();
@@ -211,10 +215,22 @@ function updateProfileField(profile, input) {
     profile[fieldName] = input.value;
   }
   markDirty();
-  if (fieldName === "name" || fieldName === "key" || fieldName === "color") {
+  if (fieldName === "name" || fieldName === "key" || fieldName === "app_filter" || fieldName === "color") {
     renderProfiles();
     editorTitle.textContent = profile.name || "프로필";
   }
+}
+
+function normalizeSettings(nextSettings) {
+  const normalized = structuredClone(nextSettings ?? fallbackSettings);
+  if (!Array.isArray(normalized.profiles) || normalized.profiles.length === 0) {
+    normalized.profiles = structuredClone(fallbackSettings.profiles);
+  }
+  normalized.overlay ??= structuredClone(fallbackSettings.overlay);
+  for (const profile of normalized.profiles) {
+    profile.app_filter ??= "";
+  }
+  return normalized;
 }
 
 function selectedProfile() {

@@ -11,7 +11,9 @@ pub fn load(app: &AppHandle) -> AppSettings {
         return AppSettings::default();
     };
 
-    serde_json::from_str(&contents).unwrap_or_default()
+    serde_json::from_str::<AppSettings>(&contents)
+        .unwrap_or_default()
+        .normalized()
 }
 
 pub fn save(app: &AppHandle, settings: &AppSettings) -> Result<(), String> {

@@ -39,6 +39,11 @@ assert(
 );
 
 assert(
+  appJs.includes("app_filter") && appJs.includes("대상 앱") && appJs.includes("MapleStory"),
+  "The settings UI should expose an application filter for MapleStory-focused key input",
+);
+
+assert(
   miniHtml.includes("mini.js") && miniHtml.includes("AlertTimer Mini"),
   "Mini timer window should have its own HTML entry point",
 );

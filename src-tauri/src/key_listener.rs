@@ -1,20 +1,27 @@
+use alert_timer_core::ActiveApplication;
 use std::sync::{
     Mutex, OnceLock,
     mpsc::{self, Sender},
 };
 use std::time::Duration;
 
-static KEY_SENDER: OnceLock<Mutex<Sender<String>>> = OnceLock::new();
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct KeyPress {
+    pub key: String,
+    pub application: Option<ActiveApplication>,
+}
+
+static KEY_SENDER: OnceLock<Mutex<Sender<KeyPress>>> = OnceLock::new();
 
 #[cfg(target_os = "windows")]
-pub fn start(sender: Sender<String>) -> Result<(), String> {
+pub fn start(sender: Sender<KeyPress>) -> Result<(), String> {
     let _ = KEY_SENDER.set(Mutex::new(sender));
     let (ready_sender, ready_receiver) = mpsc::sync_channel(1);
 
     std::thread::Builder::new()
         .name("alert-timer-key-listener".to_string())
         .spawn(move || {
-            windows_impl::event_loop(ready_sender);
+            windows_impl::poll_loop(ready_sender);
         })
         .map_err(|error| error.to_string())?;
 
@@ -24,37 +31,59 @@ pub fn start(sender: Sender<String>) -> Result<(), String> {
 }
 
 #[cfg(not(target_os = "windows"))]
-pub fn start(_sender: Sender<String>) -> Result<(), String> {
+pub fn start(_sender: Sender<KeyPress>) -> Result<(), String> {
     Err("전역 키 감지는 Windows에서만 지원됩니다.".to_string())
 }
 
 fn publish_key(key: String) {
     if let Some(sender) = KEY_SENDER.get() {
         if let Ok(sender) = sender.lock() {
-            let _ = sender.send(key);
+            let _ = sender.send(KeyPress {
+                key,
+                application: active_application(),
+            });
         }
     }
 }
 
 #[cfg(target_os = "windows")]
+fn active_application() -> Option<ActiveApplication> {
+    windows_impl::active_application()
+}
+
+#[cfg(not(target_os = "windows"))]
+fn active_application() -> Option<ActiveApplication> {
+    None
+}
+
+#[cfg(target_os = "windows")]
 mod windows_impl {
+    use super::ActiveApplication;
     use super::publish_key;
     use std::collections::HashSet;
+    use std::ffi::OsString;
+    use std::os::windows::ffi::OsStringExt;
+    use std::path::Path;
     use std::sync::mpsc::SyncSender;
     use std::sync::{Mutex, OnceLock};
     use std::thread;
     use std::time::Duration;
-    use windows_sys::Win32::Foundation::{GetLastError, LPARAM, LRESULT, WPARAM};
+    use windows_sys::Win32::Foundation::{CloseHandle, GetLastError, LPARAM, LRESULT, WPARAM};
     use windows_sys::Win32::System::LibraryLoader::GetModuleHandleW;
+    use windows_sys::Win32::System::Threading::{
+        OpenProcess, PROCESS_QUERY_LIMITED_INFORMATION, QueryFullProcessImageNameW,
+    };
     use windows_sys::Win32::UI::Input::KeyboardAndMouse::GetAsyncKeyState;
     use windows_sys::Win32::UI::WindowsAndMessaging::{
-        CallNextHookEx, DispatchMessageW, GetMessageW, KBDLLHOOKSTRUCT, MSG, SetWindowsHookExW,
+        CallNextHookEx, DispatchMessageW, GetForegroundWindow, GetMessageW, GetWindowTextLengthW,
+        GetWindowTextW, GetWindowThreadProcessId, KBDLLHOOKSTRUCT, MSG, SetWindowsHookExW,
         TranslateMessage, WH_KEYBOARD_LL, WM_KEYDOWN, WM_KEYUP, WM_SYSKEYDOWN, WM_SYSKEYUP,
     };
 
     const POLL_INTERVAL: Duration = Duration::from_millis(16);
     static PRESSED_KEYS: OnceLock<Mutex<PressedKeyTracker>> = OnceLock::new();
 
+    #[allow(dead_code)]
     pub fn event_loop(ready_sender: SyncSender<Result<(), String>>) {
         let module_handle = unsafe { GetModuleHandleW(std::ptr::null()) };
         let hook =
@@ -66,7 +95,7 @@ mod windows_impl {
                 "keyboard hook unavailable, falling back to polling. Windows error code: {error_code}"
             );
             let _ = ready_sender.send(Ok(()));
-            poll_loop();
+            poll_forever();
             return;
         }
 
@@ -113,7 +142,12 @@ mod windows_impl {
             .map(|mut tracker| tracker.mark_down(vk_code))
     }
 
-    pub fn poll_loop() {
+    pub fn poll_loop(ready_sender: SyncSender<Result<(), String>>) {
+        let _ = ready_sender.send(Ok(()));
+        poll_forever();
+    }
+
+    fn poll_forever() {
         let keys = supported_keys();
         let mut tracker = PressedKeyTracker::default();
 
@@ -130,6 +164,73 @@ mod windows_impl {
 
     fn is_key_down(vk_code: u32) -> bool {
         unsafe { GetAsyncKeyState(vk_code as i32) & 0x8000u16 as i16 != 0 }
+    }
+
+    pub fn active_application() -> Option<ActiveApplication> {
+        let window = unsafe { GetForegroundWindow() };
+        if window.is_null() {
+            return None;
+        }
+
+        let mut process_id = 0;
+        unsafe {
+            GetWindowThreadProcessId(window, &mut process_id);
+        }
+
+        Some(ActiveApplication {
+            process_name: process_name(process_id).unwrap_or_default(),
+            window_title: window_title(window),
+        })
+    }
+
+    fn process_name(process_id: u32) -> Option<String> {
+        if process_id == 0 {
+            return None;
+        }
+
+        let handle = unsafe { OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, 0, process_id) };
+        if handle.is_null() {
+            return None;
+        }
+
+        let mut buffer = vec![0u16; 1024];
+        let mut size = buffer.len() as u32;
+        let ok = unsafe { QueryFullProcessImageNameW(handle, 0, buffer.as_mut_ptr(), &mut size) };
+        unsafe {
+            CloseHandle(handle);
+        }
+
+        if ok == 0 || size == 0 {
+            return None;
+        }
+
+        let path = OsString::from_wide(&buffer[..size as usize])
+            .to_string_lossy()
+            .to_string();
+        Some(
+            Path::new(&path)
+                .file_name()
+                .and_then(|name| name.to_str())
+                .unwrap_or(&path)
+                .to_string(),
+        )
+    }
+
+    fn window_title(window: *mut std::ffi::c_void) -> String {
+        let length = unsafe { GetWindowTextLengthW(window) };
+        if length <= 0 {
+            return String::new();
+        }
+
+        let mut buffer = vec![0u16; length as usize + 1];
+        let copied = unsafe { GetWindowTextW(window, buffer.as_mut_ptr(), buffer.len() as i32) };
+        if copied <= 0 {
+            return String::new();
+        }
+
+        OsString::from_wide(&buffer[..copied as usize])
+            .to_string_lossy()
+            .to_string()
     }
 
     #[derive(Debug, Default)]
