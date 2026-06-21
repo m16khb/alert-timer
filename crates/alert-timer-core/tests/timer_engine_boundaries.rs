@@ -136,6 +136,74 @@ fn first_key_press_resets_timer_and_followup_presses_in_cycle_are_ignored() {
 }
 
 #[test]
+fn warning_phase_resets_on_first_matching_key_even_inside_cycle_window() {
+    let mut profile = janus_profile();
+    profile.duration_ms = 20_000;
+    profile.warning_before_ms = 5_000;
+    let mut engine = TimerEngine::new(vec![profile]);
+
+    assert_eq!(
+        engine.handle_key_press("A", 1_000),
+        vec![TimerEvent::Reset {
+            profile_id: "janus".to_string()
+        }]
+    );
+    assert_eq!(
+        engine.phase("janus", 16_000),
+        Some(TimerPhase::Warning {
+            remaining_ms: 5_000
+        })
+    );
+    assert_eq!(
+        engine.handle_key_press("A", 16_000),
+        vec![TimerEvent::Reset {
+            profile_id: "janus".to_string()
+        }]
+    );
+    assert_eq!(
+        engine.phase("janus", 16_000),
+        Some(TimerPhase::Running {
+            remaining_ms: 20_000
+        })
+    );
+    assert_eq!(
+        engine.handle_key_press("A", 16_100),
+        Vec::<TimerEvent>::new()
+    );
+}
+
+#[test]
+fn expired_phase_resets_on_first_matching_key_even_inside_cycle_window() {
+    let mut profile = janus_profile();
+    profile.duration_ms = 10_000;
+    profile.warning_before_ms = 2_000;
+    let mut engine = TimerEngine::new(vec![profile]);
+
+    assert_eq!(
+        engine.handle_key_press("A", 1_000),
+        vec![TimerEvent::Reset {
+            profile_id: "janus".to_string()
+        }]
+    );
+    assert_eq!(
+        engine.phase("janus", 12_000),
+        Some(TimerPhase::Expired { overdue_ms: 1_000 })
+    );
+    assert_eq!(
+        engine.handle_key_press("A", 12_000),
+        vec![TimerEvent::Reset {
+            profile_id: "janus".to_string()
+        }]
+    );
+    assert_eq!(
+        engine.phase("janus", 12_000),
+        Some(TimerPhase::Running {
+            remaining_ms: 10_000
+        })
+    );
+}
+
+#[test]
 fn non_matching_keys_do_not_advance_the_current_cycle() {
     let mut engine = TimerEngine::new(vec![janus_profile()]);
 

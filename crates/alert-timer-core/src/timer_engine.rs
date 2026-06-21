@@ -111,6 +111,9 @@ impl TimerEngine {
             }
 
             runtime.reset_expired_cycle(now_ms);
+            if runtime.is_alerting(now_ms) {
+                runtime.reset_cycle();
+            }
 
             if runtime.cycle_keydowns_seen == 0 {
                 runtime.started_at_ms = Some(now_ms);
@@ -160,12 +163,23 @@ impl TimerEngine {
 }
 
 impl TimerRuntime {
+    fn is_alerting(&self, now_ms: u64) -> bool {
+        matches!(
+            self.phase(now_ms),
+            TimerPhase::Warning { .. } | TimerPhase::Expired { .. }
+        )
+    }
+
+    fn reset_cycle(&mut self) {
+        self.cycle_started_at_ms = None;
+        self.cycle_keydowns_seen = 0;
+    }
+
     fn reset_expired_cycle(&mut self, now_ms: u64) {
         if self.cycle_started_at_ms.is_some_and(|cycle_started_at_ms| {
             now_ms.saturating_sub(cycle_started_at_ms) >= CYCLE_RESET_AFTER_MS
         }) {
-            self.cycle_started_at_ms = None;
-            self.cycle_keydowns_seen = 0;
+            self.reset_cycle();
         }
     }
 
