@@ -25,6 +25,7 @@ struct AppState {
 
 impl AppState {
     fn new(settings: AppSettings) -> Self {
+        let settings = settings.normalized();
         Self {
             engine: Mutex::new(TimerEngine::new(settings.to_timer_profiles())),
             settings: Mutex::new(settings),
@@ -37,6 +38,7 @@ impl AppState {
     }
 
     fn replace_settings(&self, settings: AppSettings) {
+        let settings = settings.normalized();
         self.engine
             .lock()
             .replace_profiles(settings.to_timer_profiles());
@@ -68,6 +70,7 @@ fn save_settings(
     state: State<'_, Arc<AppState>>,
     settings: AppSettings,
 ) -> Result<AppSettings, String> {
+    let settings = settings.normalized();
     settings.validate()?;
     settings_store::save(&app, &settings)?;
     state.replace_settings(settings.clone());
@@ -196,4 +199,39 @@ fn publish_state(app: &AppHandle, state: &Arc<AppState>) {
     });
 
     overlay::publish(app, payload);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::models::OverlaySettings;
+
+    fn empty_settings() -> AppSettings {
+        AppSettings {
+            profiles: Vec::new(),
+            overlay: OverlaySettings {
+                border_thickness_px: 8,
+            },
+        }
+    }
+
+    #[test]
+    fn app_state_initializes_empty_profiles_with_default_janus() {
+        let state = AppState::new(empty_settings());
+
+        assert_eq!(state.settings.lock().profiles.len(), 1);
+        assert_eq!(state.settings.lock().profiles[0].id, "janus");
+        assert_eq!(state.engine.lock().profiles().len(), 1);
+    }
+
+    #[test]
+    fn app_state_replacement_keeps_at_least_one_profile() {
+        let state = AppState::new(AppSettings::default());
+
+        state.replace_settings(empty_settings());
+
+        assert_eq!(state.settings.lock().profiles.len(), 1);
+        assert_eq!(state.settings.lock().profiles[0].key, "]");
+        assert_eq!(state.engine.lock().profiles().len(), 1);
+    }
 }

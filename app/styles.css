@@ -146,6 +146,20 @@ h1 {
   transform: translateY(-1px);
 }
 
+.primary:disabled,
+.ghost:disabled,
+.danger:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+  transform: none;
+}
+
+.primary:disabled:hover,
+.ghost:disabled:hover,
+.danger:disabled:hover {
+  transform: none;
+}
+
 .profile-list {
   display: grid;
   gap: 8px;

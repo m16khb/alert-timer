@@ -69,6 +69,7 @@ async function bootstrap() {
 }
 
 function render() {
+  ensureProfileSelection();
   renderProfiles();
   renderEditor();
   renderStatusOnly();
@@ -137,7 +138,7 @@ function renderEditor() {
       </label>
     </div>
     <div class="editor-actions">
-      <button class="danger" id="delete-profile" type="button">삭제</button>
+      <button class="danger" id="delete-profile" type="button" ${settings.profiles.length <= 1 ? "disabled" : ""}>삭제</button>
       <button class="primary" id="save-profile" type="button">저장</button>
     </div>
   `;
@@ -237,6 +238,7 @@ function deleteSelectedProfile() {
 
 async function saveSettings() {
   try {
+    settings = normalizeSettings(settings);
     settings = normalizeSettings(await invoke("save_settings", { settings }));
     dirty = false;
     loadWarnings = [];
@@ -244,6 +246,13 @@ async function saveSettings() {
     render();
   } catch (error) {
     saveState.textContent = String(error);
+  }
+}
+
+function ensureProfileSelection() {
+  settings = normalizeSettings(settings);
+  if (!selectedProfile()) {
+    selectedId = settings.profiles[0]?.id ?? null;
   }
 }
 
